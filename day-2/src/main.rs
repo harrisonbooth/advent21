@@ -1,29 +1,26 @@
-fn parse_commands(commands: Vec<String>) -> Vec<(String, String)> {
-    commands
-        .iter()
-        .map(|command| command.split_whitespace())
-        .map(|mut command| match (command.next(), command.next()) {
+fn parse_commands(commands: Vec<String>) -> impl Iterator<Item = (String, String)> {
+    commands.into_iter().map(|command| {
+        let mut split_command = command.split_whitespace();
+        match (split_command.next(), split_command.next()) {
             (Some(direction), Some(size)) => (direction.to_string(), size.to_string()),
             _ => panic!("Problem parsing commands."),
-        })
-        .collect()
+        }
+    })
 }
 
 fn execute_commands(commands: Vec<String>) -> (i32, i32) {
     let mut horizontal = 0;
     let mut depth = 0;
 
-    parse_commands(commands)
-        .iter()
-        .for_each(|(direction, size)| {
-            let int_size: i32 = size.parse().unwrap();
-            match direction.as_str() {
-                "forward" => horizontal += int_size,
-                "up" => depth -= int_size,
-                "down" => depth += int_size,
-                direction => panic!("Unrecognised direction {}", direction),
-            }
-        });
+    parse_commands(commands).for_each(|(direction, size)| {
+        let int_size: i32 = size.parse().unwrap();
+        match direction.as_str() {
+            "forward" => horizontal += int_size,
+            "up" => depth -= int_size,
+            "down" => depth += int_size,
+            direction => panic!("Unrecognised direction {}", direction),
+        }
+    });
 
     (horizontal, depth)
 }
@@ -33,20 +30,18 @@ fn execute_updated_commands(commands: Vec<String>) -> (i32, i32) {
     let mut horizontal = 0;
     let mut depth = 0;
 
-    parse_commands(commands)
-        .iter()
-        .for_each(|(direction, size)| {
-            let int_size: i32 = size.parse().unwrap();
-            match direction.as_str() {
-                "forward" => {
-                    horizontal += int_size;
-                    depth += aim * int_size;
-                }
-                "up" => aim -= int_size,
-                "down" => aim += int_size,
-                direction => panic!("Unrecognised direction {}", direction),
+    parse_commands(commands).for_each(|(direction, size)| {
+        let int_size: i32 = size.parse().unwrap();
+        match direction.as_str() {
+            "forward" => {
+                horizontal += int_size;
+                depth += aim * int_size;
             }
-        });
+            "up" => aim -= int_size,
+            "down" => aim += int_size,
+            direction => panic!("Unrecognised direction {}", direction),
+        }
+    });
 
     (horizontal, depth)
 }
