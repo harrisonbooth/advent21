@@ -8,18 +8,11 @@ fn main() {
 
     readings
         .iter()
-        .map(|row| {
-            row.split("")
-                .filter_map(|bit| match bit.is_empty() {
-                    true => None,
-                    false => Some(bit.parse::<usize>().unwrap()),
-                })
-                .enumerate()
-        })
+        .map(|row| row.chars().enumerate())
         .flatten()
-        .for_each(|(index, reading)| {
-            let count = counts.entry(index).or_insert(reading);
-            count.add_assign(reading);
+        .filter(|(_, reading)| *reading == '1')
+        .for_each(|(index, _)| {
+            counts.entry(index).or_insert(1).add_assign(1);
         });
 
     let gamma_string: String = counts
@@ -31,21 +24,13 @@ fn main() {
                 "0"
             }
         })
-        .collect::<Vec<&str>>()
-        .join("");
+        .collect();
     let gamma = isize::from_str_radix(gamma_string.as_str(), 2).unwrap();
 
-    let epsilon_string: String = counts
-        .iter()
-        .map(|(_, &count)| {
-            if count > (reading_count / 2) {
-                "0"
-            } else {
-                "1"
-            }
-        })
-        .collect::<Vec<&str>>()
-        .join("");
+    let epsilon_string: String = gamma_string
+        .chars()
+        .map(|bit| if bit == '1' { '0' } else { '1' })
+        .collect();
     let epsilon = isize::from_str_radix(epsilon_string.as_str(), 2).unwrap();
 
     println!("Part One: {}", gamma * epsilon);
