@@ -16,13 +16,18 @@ fn main() {
         .iter()
         .map(|pair| {
             pair.split(",")
-                .filter_map(|x| match !x.is_empty() {
-                    true => Some(x.parse().unwrap()),
+                .filter_map(|coord_string| match !coord_string.is_empty() {
+                    true => Some(coord_string.parse().unwrap()),
                     false => None,
                 })
                 .collect::<Vec<isize>>()
         })
-        .map(|coord_vec| Coord::from_vec(coord_vec))
+        .map(|coord_vec| {
+            Coord::new(
+                coord_vec.get(0).unwrap().clone(),
+                coord_vec.get(1).unwrap().clone(),
+            )
+        })
         .collect();
 
     let lines: Vec<Line> = coords
@@ -35,65 +40,66 @@ fn main() {
         })
         .collect();
 
-    let mut cardinal_touched_count: HashMap<Coord, isize> = HashMap::new();
-    lines
-        .iter()
-        .filter(|line| line.is_cardinal())
-        .map(|line| line.touched_coords())
-        .flatten()
-        .for_each(|coord| {
-            cardinal_touched_count
-                .entry(coord)
-                .or_insert(0)
-                .add_assign(1)
-        });
-
-    let multi_cardinal_touched_count = cardinal_touched_count
-        .values()
-        .filter(|&count| count > &1)
-        .collect::<Vec<&isize>>()
-        .len();
-
-    let mut touched_count: HashMap<Coord, isize> = HashMap::new();
-    lines
-        .iter()
-        .map(|line| line.touched_coords())
-        .flatten()
-        .for_each(|coord| touched_count.entry(coord).or_insert(0).add_assign(1));
-
-    let multi_touched_count = touched_count
-        .values()
-        .filter(|&count| count > &1)
-        .collect::<Vec<&isize>>()
-        .len();
-
-    println!(
-        "Total number of points touched by a cardinal line: {}",
-        cardinal_touched_count.len()
-    );
+    let vent_readings = VentReadings::new(lines);
 
     println!(
         "Number of points with more than one crossing cardinal line: {}",
-        multi_cardinal_touched_count,
+        vent_readings.count_overlaps(ReadingMode::Cardinal),
     );
-
-    println!(
-        "Total number of points touched by a line: {}",
-        touched_count.len()
-    );
-
-    // println!(
-    //     "Points with more than one crossing line: {:?}",
-    //     touched_count
-    // );
 
     println!(
         "Number of points with more than one crossing line: {}",
-        multi_touched_count
+        vent_readings.count_overlaps(ReadingMode::CardinalAndOrdinal)
     );
 }
 
-#[derive(Debug)]
+enum ReadingMode {
+    Cardinal,
+    CardinalAndOrdinal,
+}
+struct VentReadings {
+    lines: Vec<Line>,
+}
+
+impl VentReadings {
+    pub fn new(lines: Vec<Line>) -> Self {
+        Self { lines }
+    }
+
+    pub fn count_overlaps(&self, mode: ReadingMode) -> usize {
+        let touched_count = self.count_touched_coords(mode);
+
+        touched_count
+            .values()
+            .filter(|&count| count > &1)
+            .collect::<Vec<&isize>>()
+            .len()
+    }
+
+    fn count_touched_coords(&self, mode: ReadingMode) -> HashMap<Coord, isize> {
+        let lines: Vec<Line> = match mode {
+            ReadingMode::Cardinal => self
+                .lines
+                .iter()
+                .filter_map(|&line| match line.is_cardinal() {
+                    true => Some(line),
+                    false => None,
+                })
+                .collect(),
+            ReadingMode::CardinalAndOrdinal => self.lines.clone(),
+        };
+
+        let mut touched_count: HashMap<Coord, isize> = HashMap::new();
+        lines
+            .iter()
+            .map(|line| line.touched_coords())
+            .flatten()
+            .for_each(|coord| touched_count.entry(coord).or_insert(0).add_assign(1));
+        touched_count
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
 struct Line {
     start: Coord,
     end: Coord,
@@ -175,7 +181,7 @@ impl Line {
     }
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Copy)]
 struct Coord {
     x: isize,
     y: isize,
@@ -184,12 +190,5 @@ struct Coord {
 impl Coord {
     pub fn new(x: isize, y: isize) -> Self {
         Self { x, y }
-    }
-
-    pub fn from_vec(vec: Vec<isize>) -> Self {
-        Self {
-            x: vec.get(0).unwrap().clone(),
-            y: vec.get(1).unwrap().clone(),
-        }
     }
 }
