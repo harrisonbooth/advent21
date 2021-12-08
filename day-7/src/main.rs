@@ -10,14 +10,13 @@ fn main() {
 
     positions.sort();
 
-    let linear_fuel = CrabCalculator::new(CalculatorMode::LinearCost).calculate_fuel(&positions);
+    let linear_fuel = CrabCalculator::calculate_fuel(CalculatorMode::LinearCost, &positions);
     println!(
         "Fuel used to get to linear best position was: {}",
         linear_fuel
     );
 
-    let gaussian_fuel =
-        CrabCalculator::new(CalculatorMode::GaussianCost).calculate_fuel(&positions);
+    let gaussian_fuel = CrabCalculator::calculate_fuel(CalculatorMode::GaussianCost, &positions);
     println!(
         "Fuel used to get to gaussian best position was: {}",
         gaussian_fuel
@@ -29,17 +28,11 @@ enum CalculatorMode {
     LinearCost,
 }
 
-struct CrabCalculator {
-    mode: CalculatorMode,
-}
+struct CrabCalculator {}
 
 impl CrabCalculator {
-    pub fn new(mode: CalculatorMode) -> Self {
-        Self { mode }
-    }
-
-    fn find_best_position(&self, positions: &Vec<isize>) -> isize {
-        match self.mode {
+    fn find_best_position(mode: &CalculatorMode, positions: &Vec<isize>) -> isize {
+        match mode {
             CalculatorMode::GaussianCost => {
                 (positions.iter().sum::<isize>() + 1) / (positions.len() as isize)
             }
@@ -47,27 +40,27 @@ impl CrabCalculator {
         }
     }
 
-    pub fn calculate_fuel(&self, positions: &Vec<isize>) -> isize {
-        let best_position = self.find_best_position(&positions);
+    pub fn calculate_fuel(mode: CalculatorMode, positions: &Vec<isize>) -> isize {
+        let best_position = Self::find_best_position(&mode, &positions);
 
-        match self.mode {
+        match mode {
             CalculatorMode::GaussianCost => {
-                self.calculcate_fuel_gaussian_rate(&positions, best_position)
+                Self::calculcate_fuel_gaussian_rate(&positions, best_position)
             }
             CalculatorMode::LinearCost => {
-                self.calculcate_fuel_linear_rate(&positions, best_position)
+                Self::calculcate_fuel_linear_rate(&positions, best_position)
             }
         }
     }
 
-    fn calculcate_fuel_linear_rate(&self, positions: &Vec<isize>, best_position: isize) -> isize {
+    fn calculcate_fuel_linear_rate(positions: &Vec<isize>, best_position: isize) -> isize {
         positions
             .iter()
             .map(|position| (position - best_position).abs())
             .sum()
     }
 
-    fn calculcate_fuel_gaussian_rate(&self, positions: &Vec<isize>, best_position: isize) -> isize {
+    fn calculcate_fuel_gaussian_rate(positions: &Vec<isize>, best_position: isize) -> isize {
         positions
             .iter()
             .map(|position| {
