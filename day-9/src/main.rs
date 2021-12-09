@@ -1,11 +1,16 @@
 pub fn main() {
-    let test_file = include_str!("../input.txt");
-    let height_map = HeightMap::generate(test_file.to_string());
+    let file = include_str!("../input.txt");
+    let height_map = HeightMap::generate(file.to_string());
 
     println!(
         "Total of low risks (part 1): {}",
         height_map.total_low_risks()
-    )
+    );
+
+    println!(
+        "Product of three biggest basins (part 2): {}",
+        height_map.total_biggest_basins()
+    );
 }
 
 struct HeightMap {
@@ -46,14 +51,63 @@ impl HeightMap {
         Self::count_risks(risks)
     }
 
-    pub fn find_low_risk(&self) -> Vec<usize> {
-        let mut low_risk: Vec<usize> = Vec::new();
+    pub fn total_biggest_basins(&self) -> usize {
+        let low_risks = self.find_low_risk();
+
+        let mut basins: Vec<Vec<(usize, usize)>> = low_risks
+            .iter()
+            .map(|node| self.map_basin(node.1))
+            .collect();
+
+        basins.sort_by(|a, b| b.len().cmp(&a.len()));
+
+        basins
+            .iter()
+            .take(3)
+            .fold(1, |acc, basin| acc * basin.len())
+    }
+
+    fn map_basin(&self, origin: (usize, usize)) -> Vec<(usize, usize)> {
+        let mut basin_nodes = vec![origin];
+        let mut next_to_look_at: Vec<(usize, usize)> = vec![origin];
+        // println!("Origin: {:?}", origin);
+        loop {
+            match next_to_look_at.get(0) {
+                Some(basin_node) => {
+                    let mut children: Vec<(usize, usize)> = self
+                        .find_adjacents(basin_node.clone())
+                        .into_iter()
+                        .filter(|&coords| {
+                            self.heights[coords.1][coords.0] < 9 && !basin_nodes.contains(&coords)
+                        })
+                        .collect();
+
+                    // println!("Next to look at: {:?}", next_to_look_at);
+                    // println!("Children: {:?}", children);
+                    basin_nodes.append(&mut children.clone());
+                    next_to_look_at.append(&mut children);
+                    next_to_look_at.remove(0);
+                    // println!(
+                    // "Next to look at after appending children & removing index 0: {:?}",
+                    // next_to_look_at
+                    // );
+                }
+                None => break,
+            }
+        }
+        // println!("-------------------------------------");
+
+        basin_nodes
+    }
+
+    pub fn find_low_risk(&self) -> Vec<(usize, (usize, usize))> {
+        let mut low_risk: Vec<(usize, (usize, usize))> = Vec::new();
         for y in 0..self.y_bound {
             for x in 0..self.x_bound {
                 let height = self.heights[y][x];
                 let adjacents = self.find_adjacents((x, y));
                 match adjacents.iter().all(|(x, y)| self.heights[*y][*x] > height) {
-                    true => low_risk.push(height),
+                    true => low_risk.push((height, (x, y))),
                     false => (),
                 }
             }
@@ -87,7 +141,7 @@ impl HeightMap {
         adjacents
     }
 
-    fn count_risks(heights: Vec<usize>) -> usize {
-        heights.iter().fold(0, |acc, height| acc + (height + 1))
+    fn count_risks(nodes: Vec<(usize, (usize, usize))>) -> usize {
+        nodes.iter().fold(0, |acc, node| acc + (node.0 + 1))
     }
 }
