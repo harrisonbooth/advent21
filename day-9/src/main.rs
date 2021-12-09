@@ -69,33 +69,25 @@ impl HeightMap {
 
     fn map_basin(&self, origin: (usize, usize)) -> Vec<(usize, usize)> {
         let mut basin_nodes = vec![origin];
-        let mut next_to_look_at: Vec<(usize, usize)> = vec![origin];
-        // println!("Origin: {:?}", origin);
+        let mut position = 0;
+
         loop {
-            match next_to_look_at.get(0) {
+            match basin_nodes.get(position) {
                 Some(basin_node) => {
                     let mut children: Vec<(usize, usize)> = self
-                        .find_adjacents(basin_node.clone())
+                        .find_adjacents(basin_node)
                         .into_iter()
                         .filter(|&coords| {
                             self.heights[coords.1][coords.0] < 9 && !basin_nodes.contains(&coords)
                         })
                         .collect();
 
-                    // println!("Next to look at: {:?}", next_to_look_at);
-                    // println!("Children: {:?}", children);
-                    basin_nodes.append(&mut children.clone());
-                    next_to_look_at.append(&mut children);
-                    next_to_look_at.remove(0);
-                    // println!(
-                    // "Next to look at after appending children & removing index 0: {:?}",
-                    // next_to_look_at
-                    // );
+                    basin_nodes.append(&mut children);
+                    position += 1;
                 }
                 None => break,
             }
         }
-        // println!("-------------------------------------");
 
         basin_nodes
     }
@@ -105,7 +97,7 @@ impl HeightMap {
         for y in 0..self.y_bound {
             for x in 0..self.x_bound {
                 let height = self.heights[y][x];
-                let adjacents = self.find_adjacents((x, y));
+                let adjacents = self.find_adjacents(&(x, y));
                 match adjacents.iter().all(|(x, y)| self.heights[*y][*x] > height) {
                     true => low_risk.push((height, (x, y))),
                     false => (),
@@ -115,7 +107,7 @@ impl HeightMap {
         low_risk
     }
 
-    fn find_adjacents(&self, coords: (usize, usize)) -> Vec<(usize, usize)> {
+    fn find_adjacents(&self, coords: &(usize, usize)) -> Vec<(usize, usize)> {
         let right = match (coords.0 + 1, coords.1) {
             (x, y) if x < self.x_bound => Some((x, y)),
             (_, _) => None,
