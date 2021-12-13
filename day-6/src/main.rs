@@ -1,5 +1,3 @@
-use std::ops::AddAssign;
-
 fn main() {
     let file = include_str!("../input.txt");
     let mut fishes: Vec<usize> = file
