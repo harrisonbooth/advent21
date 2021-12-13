@@ -1,6 +1,6 @@
 fn main() {
     let file = include_str!("../input.txt");
-    let mut fishes: Vec<usize> = file
+    let fishes: Vec<usize> = file
         .split(",")
         .filter_map(|fish_str| match !fish_str.is_empty() {
             true => Some(fish_str.parse().unwrap()),
